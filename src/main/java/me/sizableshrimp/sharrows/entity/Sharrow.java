@@ -79,8 +79,10 @@ public class Sharrow extends Arrow {
 
                 if (placeResult == InteractionResult.FAIL) {
                     ItemEntity itemEntity = new ItemEntity(this.level, this.getX(), this.getY(), this.getZ(), carryingStack);
-                    double scale = 1.0D;
-                    itemEntity.setDeltaMovement(this.level.random.nextDouble() * scale, this.level.random.nextDouble() * scale, this.level.random.nextDouble() * scale);
+                    double scale = 0.4D;
+                    itemEntity.setDeltaMovement((this.level.random.nextDouble() - 0.5D) * scale,
+                            Math.max(0.3D, Math.abs(this.level.random.nextDouble() - 0.5D) * scale),
+                            (this.level.random.nextDouble() - 0.5D) * scale);
                     itemEntity.setDefaultPickUpDelay();
                     this.level.addFreshEntity(itemEntity);
                 }
@@ -90,6 +92,6 @@ public class Sharrow extends Arrow {
 
     @Override
     protected ItemStack getPickupItem() {
-        return new ItemStack(ItemInit.SHARROW.get());
+        return new ItemStack(Items.ARROW);
     }
 }

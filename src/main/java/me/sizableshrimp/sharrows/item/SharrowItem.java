@@ -34,7 +34,7 @@ public class SharrowItem extends ArrowItem {
         ItemStack carryingStack = getCarryingStack(stack);
         if (!carryingStack.isEmpty()) {
             MutableComponent component = carryingStack.getHoverName().copy();
-            component.append(" x").append(String.valueOf(carryingStack.getCount()));
+            // component.append(" x").append(String.valueOf(carryingStack.getCount()));
             tooltipComponents.add(Component.translatable("item.sharrows.sharrow.description", component).withStyle(ChatFormatting.GRAY));
         }
     }

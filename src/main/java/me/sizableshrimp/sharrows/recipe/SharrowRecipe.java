@@ -68,8 +68,11 @@ public class SharrowRecipe extends CustomRecipe {
 
         CompoundTag arrowTag = arrowStack.save(new CompoundTag());
         arrowTag.putString("id", ItemInit.SHARROW.getId().toString());
+        arrowTag.putByte("Count", (byte) 1);
         ItemStack result = ItemStack.of(arrowTag);
-        SharrowItem.setCarryingStack(result, nonArrowStack);
+        ItemStack copyNonArrowStack = nonArrowStack.copy();
+        copyNonArrowStack.setCount(1);
+        SharrowItem.setCarryingStack(result, copyNonArrowStack);
 
         return result;
     }
