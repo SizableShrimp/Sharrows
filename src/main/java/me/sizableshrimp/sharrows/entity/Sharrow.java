@@ -1,13 +1,16 @@
 package me.sizableshrimp.sharrows.entity;
 
 import me.sizableshrimp.sharrows.init.EntityInit;
-import me.sizableshrimp.sharrows.init.ItemInit;
 import me.sizableshrimp.sharrows.item.SharrowItem;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -18,6 +21,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.TntBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 
@@ -72,6 +77,7 @@ public class Sharrow extends Arrow {
         if (!this.level.isClientSide && result.getType() != HitResult.Type.MISS) {
             ItemStack carryingStack = getCarryingStack();
             if (!carryingStack.isEmpty()) {
+                setCarryingStack(ItemStack.EMPTY);
                 InteractionResult placeResult = InteractionResult.FAIL;
                 if (carryingStack.getItem() instanceof BlockItem blockItem && result instanceof BlockHitResult blockHitResult) {
                     placeResult = blockItem.place(new BlockPlaceContext(this.level, null, InteractionHand.MAIN_HAND, carryingStack, blockHitResult));
@@ -85,7 +91,13 @@ public class Sharrow extends Arrow {
                             (this.level.random.nextDouble() - 0.5D) * scale);
                     itemEntity.setDefaultPickUpDelay();
                     this.level.addFreshEntity(itemEntity);
-                }
+                }/* else if (this.isOnFire() && result instanceof BlockHitResult blockHitResult) {
+                    Entity owner = this.getOwner();
+                    LivingEntity livingOwner = owner instanceof LivingEntity ? (LivingEntity) owner : null;
+                    BlockPos pos = blockHitResult.getBlockPos();
+                    BlockState blockState = this.level.getBlockState(pos);
+                    blockState.onCaughtFire(this.level, pos, null, livingOwner);
+                }*/
             }
         }
     }
@@ -93,5 +105,22 @@ public class Sharrow extends Arrow {
     @Override
     protected ItemStack getPickupItem() {
         return new ItemStack(Items.ARROW);
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag compound) {
+        super.addAdditionalSaveData(compound);
+
+        ItemStack carryingStack = this.getCarryingStack();
+        if (!carryingStack.isEmpty())
+            compound.put("CarryingStack", carryingStack.save(new CompoundTag()));
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag compound) {
+        super.readAdditionalSaveData(compound);
+
+        if (compound.contains("CarryingStack", Tag.TAG_COMPOUND))
+            this.setCarryingStack(ItemStack.of(compound.getCompound("CarryingStack")));
     }
 }
