@@ -10,7 +10,6 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -21,7 +20,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.TntBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -74,31 +72,36 @@ public class Sharrow extends Arrow {
     protected void onHit(HitResult result) {
         super.onHit(result);
 
-        if (!this.level.isClientSide && result.getType() != HitResult.Type.MISS) {
-            ItemStack carryingStack = getCarryingStack();
-            if (!carryingStack.isEmpty()) {
-                setCarryingStack(ItemStack.EMPTY);
-                InteractionResult placeResult = InteractionResult.FAIL;
-                if (carryingStack.getItem() instanceof BlockItem blockItem && result instanceof BlockHitResult blockHitResult) {
-                    placeResult = blockItem.place(new BlockPlaceContext(this.level, null, InteractionHand.MAIN_HAND, carryingStack, blockHitResult));
-                }
+        if (this.level.isClientSide || result.getType() == HitResult.Type.MISS)
+            return;
 
-                if (placeResult == InteractionResult.FAIL) {
-                    ItemEntity itemEntity = new ItemEntity(this.level, this.getX(), this.getY(), this.getZ(), carryingStack);
-                    double scale = 0.4D;
-                    itemEntity.setDeltaMovement((this.level.random.nextDouble() - 0.5D) * scale,
-                            Math.max(0.3D, Math.abs(this.level.random.nextDouble() - 0.5D) * scale),
-                            (this.level.random.nextDouble() - 0.5D) * scale);
-                    itemEntity.setDefaultPickUpDelay();
-                    this.level.addFreshEntity(itemEntity);
-                }/* else if (this.isOnFire() && result instanceof BlockHitResult blockHitResult) {
-                    Entity owner = this.getOwner();
-                    LivingEntity livingOwner = owner instanceof LivingEntity ? (LivingEntity) owner : null;
-                    BlockPos pos = blockHitResult.getBlockPos();
-                    BlockState blockState = this.level.getBlockState(pos);
-                    blockState.onCaughtFire(this.level, pos, null, livingOwner);
-                }*/
+        ItemStack carryingStack = getCarryingStack();
+        if (carryingStack.isEmpty())
+            return;
+
+        setCarryingStack(ItemStack.EMPTY);
+        InteractionResult placeResult = InteractionResult.FAIL;
+        if (carryingStack.getItem() instanceof BlockItem blockItem && result instanceof BlockHitResult blockHitResult) {
+            BlockPlaceContext blockPlaceContext = new BlockPlaceContext(this.level, null, InteractionHand.MAIN_HAND, carryingStack, blockHitResult);
+            BlockPlaceContext updatedContext = blockItem.updatePlacementContext(blockPlaceContext);
+            BlockPos clickedPos = updatedContext == null ? null : updatedContext.getClickedPos();
+            BlockState prevState = clickedPos == null ? null : this.level.getBlockState(clickedPos);
+
+            placeResult = blockItem.place(blockPlaceContext);
+
+            if (placeResult != InteractionResult.FAIL && clickedPos != null && prevState != this.level.getBlockState(clickedPos)) {
+                this.onHitBlock(new BlockHitResult(this.position(), blockHitResult.getDirection(), clickedPos, true));
             }
+        }
+
+        if (placeResult == InteractionResult.FAIL) {
+            ItemEntity itemEntity = new ItemEntity(this.level, this.getX(), this.getY(), this.getZ(), carryingStack);
+            double scale = 0.4D;
+            itemEntity.setDeltaMovement((this.level.random.nextDouble() - 0.5D) * scale,
+                    Math.max(0.3D, Math.abs(this.level.random.nextDouble() - 0.5D) * scale),
+                    (this.level.random.nextDouble() - 0.5D) * scale);
+            itemEntity.setDefaultPickUpDelay();
+            this.level.addFreshEntity(itemEntity);
         }
     }
 
